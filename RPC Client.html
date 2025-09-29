@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RPC Client</title>
+</head>
+<body>
+  <h1>RPC Client</h1>
+
+  <h2>Add</h2>
+  <input type="number" id="add-x" placeholder="x">
+  <input type="number" id="add-y" placeholder="y">
+  <button onclick="callAdd()">Add</button>
+  <p id="add-result"></p>
+
+  <h2>Multiply</h2>
+  <input type="number" id="mul-x" placeholder="x">
+  <input type="number" id="mul-y" placeholder="y">
+  <button onclick="callMultiply()">Multiply</button>
+  <p id="mul-result"></p>
+
+  <script>
+    // 🔹 Helper function with 2-second timeout
+    async function callWithTimeout(url, body) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000); // 2 sec
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeout); // cancel timeout if success
+        return await res.json();
+      } catch (err) {
+        if (err.name === "AbortError") {
+          return { error: "Request timed out" };
+        }
+        return { error: "Request failed: " + err.message };
+      }
+    }
+
+    async function callAdd() {
+      let x = document.getElementById("add-x").value;
+      let y = document.getElementById("add-y").value;
+
+      let data = await callWithTimeout("http://127.0.0.1:8080/add", { x: Number(x), y: Number(y) });
+
+      document.getElementById("add-result").innerText =
+        data.result !== undefined ? "Result: " + data.result : data.error;
+    }
+
+    async function callMultiply() {
+      let x = document.getElementById("mul-x").value;
+      let y = document.getElementById("mul-y").value;
+
+      let data = await callWithTimeout("http://127.0.0.1:8080/multiply", { x: Number(x), y: Number(y) });
+
+      document.getElementById("mul-result").innerText =
+        data.result !== undefined ? "Result: " + data.result : data.error;
+    }
+  </script>
+</body>
+</html>
